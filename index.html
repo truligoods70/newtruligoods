@@ -661,7 +661,7 @@ async function submitProduct() {
             const base64 = e.target.result.split(',')[1];
             const res = await fetch(APPS_SCRIPT_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'text/plain' },
               body: JSON.stringify({
                 action: 'uploadImage',
                 category: cat,
@@ -670,9 +670,12 @@ async function submitProduct() {
                 mimeType: selectedImageFile.type
               })
             });
-            const json = await res.json();
-            if (json.url) resolve(json.url);
-            else resolve('');
+            const text = await res.text();
+            try {
+              const json = JSON.parse(text);
+              if (json.url) resolve(json.url);
+              else resolve('');
+            } catch(e) { resolve(''); }
           } catch(err) { resolve(''); }
         };
         reader.onerror = () => resolve('');
