@@ -115,10 +115,10 @@ main{flex:1;padding:24px}
 
 /* ===== ADMIN ===== */
 #adminPanel{position:fixed;inset:0;background:rgba(28,26,16,.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
-.admin-modal{background:var(--paper);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);display:flex;flex-direction:column}
+.admin-modal{background:var(--paper);border-radius:16px;width:100%;max-width:480px;max-height:95vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .admin-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--paper);z-index:1}
 .admin-header h2{font-family:'Noto Serif TC',serif;font-size:16px;font-weight:700}
-.admin-body{padding:20px 24px;overflow-y:auto;flex:1}
+.admin-body{padding:20px 24px;padding-bottom:100px}
 .form-group{margin-bottom:16px}
 .form-label{font-size:12px;font-weight:500;color:var(--stone);margin-bottom:6px;display:block;letter-spacing:.04em}
 .form-input,.form-select,.form-textarea{width:100%;padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:border-color .2s}
@@ -331,10 +331,8 @@ input:checked+.slider:before{transform:translateX(20px)}
           <label class="toggle"><input type="checkbox" id="adminInLive"><span class="slider"></span></label>
         </div>
       </div>
-      <div id="adminStatus" class="hidden"></div>
-    </div>
-    <div class="admin-footer">
       <button class="submit-btn" onclick="submitProduct()">✓ 新增商品</button>
+      <div id="adminStatus" class="hidden"></div>
     </div>
   </div>
 </div>
