@@ -651,46 +651,53 @@ async function submitProduct() {
   showAdminStatus('送出中，請稍候...', 'ok');
 
   try {
-    // 如果有選圖片，先上傳到 Google Drive
+    let imageData = '';
+    let fileName = '';
+    let mimeType = '';
+
     if (selectedImageFile && !imgUrl) {
-      showAdminStatus('📷 圖片上傳中...', 'ok');
-      imgUrl = await new Promise((resolve, reject) => {
+      showAdminStatus('📷 圖片處理中，準備上傳...', 'ok');
+      const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = async e => {
-          try {
-            const base64 = e.target.result.split(',')[1];
-            const res = await fetch(APPS_SCRIPT_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain' },
-              body: JSON.stringify({
-                action: 'uploadImage',
-                category: cat,
-                imageData: base64,
-                fileName: selectedImageFile.name,
-                mimeType: selectedImageFile.type
-              })
-            });
-            const text = await res.text();
-            try {
-              const json = JSON.parse(text);
-              if (json.url) resolve(json.url);
-              else resolve('');
-            } catch(e) { resolve(''); }
-          } catch(err) { resolve(''); }
-        };
-        reader.onerror = () => resolve('');
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('圖片讀取失敗'));
         reader.readAsDataURL(selectedImageFile);
       });
+
+      imageData = dataUrl.split(',')[1];
+      fileName = selectedImageFile.name;
+      mimeType = selectedImageFile.type || 'image/jpeg';
     }
 
+    const payload = {
+      action: 'addProduct',
+      sheet: cat,
+      category: cat,
+      name,
+      price,
+      cost,
+      stock,
+      img: imgUrl,
+      desc,
+      visible: '顯示',
+      inStock,
+      inLive,
+      imageData,
+      fileName,
+      mimeType
+    };
+
+    // GitHub Pages 呼叫 Google Apps Script 時，避免 CORS 擋住。
+    // 這裡改成一次送出商品資料＋圖片，Apps Script 端負責上傳 Drive 與寫入 Sheet。
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sheet: cat, name, price, cost, stock, img: imgUrl, desc, visible: '顯示', inStock, inLive })
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
     });
 
-    showAdminStatus('✓ 商品已新增！', 'ok');
+    showAdminStatus('✓ 已送出！請等 3 秒後重新整理商品資料', 'ok');
+
     ['adminCat','adminName','adminPrice','adminCost','adminDesc','adminImgUrl'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('adminStock').value = '有貨';
     document.getElementById('adminInStock').checked = false;
@@ -698,9 +705,12 @@ async function submitProduct() {
     document.getElementById('adminImgPreview').classList.add('hidden');
     document.querySelector('.img-upload-area p').textContent = '點擊上傳圖片';
     selectedImageFile = null;
-    setTimeout(() => loadAllProducts(), 1500);
+    document.getElementById('adminImgFile').value = '';
+
+    setTimeout(() => loadAllProducts(), 3500);
   } catch(e) {
-    showAdminStatus('發生錯誤，請稍後再試', 'err');
+    console.error(e);
+    showAdminStatus('發生錯誤：' + e.message, 'err');
   }
 }
 
