@@ -597,11 +597,20 @@ function buildListText() {
 
 function sendToLine() {
   const text = buildListText();
-  const rawLineId = String(config.lineId || '@480sfhvi').trim();
-  const lineId = rawLineId.startsWith('@') ? rawLineId : '@' + rawLineId;
-  const encodedLineId = encodeURIComponent(lineId);
+  let lineId = String(config.lineId || '@480sfhvi').trim();
+
+  // LINE 官方帳號 oaMessage 的帳號路徑要保留 @，不要轉成 %40，也不要移除 @
+  if (!lineId.startsWith('@')) lineId = '@' + lineId;
+
   const encodedText = encodeURIComponent(text);
-  window.open(`https://line.me/R/oaMessage/${encodedLineId}/?${encodedText}`, '_blank');
+  const url = `https://line.me/R/oaMessage/${lineId}/?${encodedText}`;
+
+  // 先複製一份清單，萬一 LINE App 沒帶入文字，也可以直接貼上
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+
+  window.location.href = url;
 }
 
 function copyList() {
