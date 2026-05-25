@@ -224,7 +224,7 @@ input:checked+.slider:before{transform:translateX(20px)}
   <div class="hero" id="heroSection">
     <div class="hero-copy">
       <h1 id="heroTitle">精選每一件<br>有溯源的好物</h1>
-      <p>選好後傳給初立，我們幫你完成訂單</p>
+      <p id="heroSubtitle">選好後傳給初立，我們幫你完成訂單</p>
     </div>
     <div class="hero-icon">🛍️</div>
   </div>
@@ -382,6 +382,31 @@ function showAdminBtn() {
 }
 
 // ===== LOAD DATA =====
+
+function safeTextToHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/
+/g, '<br>');
+}
+
+function applySiteText() {
+  if (config.siteTitle) {
+    document.querySelectorAll('.logo-zh,.gate-logo').forEach(el => el.textContent = config.siteTitle);
+  }
+  if (config.siteSubtitle) {
+    document.querySelectorAll('.logo-en,.gate-en').forEach(el => el.textContent = config.siteSubtitle);
+  }
+  if (config.heroTitle) {
+    document.getElementById('heroTitle').innerHTML = safeTextToHtml(config.heroTitle);
+  }
+  if (config.heroSubtitle) {
+    document.getElementById('heroSubtitle').textContent = config.heroSubtitle;
+  }
+}
+
 async function loadConfig() {
   try {
     const res = await fetch(SHEET_URL + encodeURIComponent('系統設定'));
@@ -395,8 +420,15 @@ async function loadConfig() {
       if (k === '管理者密碼') config.adminPw = String(v || '');
       if (k === 'LINE ID') config.lineId = v || '';
       if (k === '網站公告') config.announcement = v || '';
+      if (k === '網站標題') config.siteTitle = v || '';
+      if (k === '網站副標題') config.siteSubtitle = v || '';
+      if (k === '首頁大標題') config.heroTitle = v || '';
+      if (k === '首頁副標題') config.heroSubtitle = v || '';
       if (k === '連線館說明') config.liveDesc = v || '';
     });
+    // Apply editable text from 系統設定
+    applySiteText();
+
     // Show announcement
     if (config.announcement) {
       const el = document.getElementById('announcement');
