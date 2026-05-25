@@ -597,8 +597,11 @@ function buildListText() {
 
 function sendToLine() {
   const text = buildListText();
-  const lineId = (config.lineId || '@480sfhvi').replace('@', '');
-  window.open(`https://line.me/R/oaMessage/${lineId}/?${encodeURIComponent(text)}`, '_blank');
+  const rawLineId = String(config.lineId || '@480sfhvi').trim();
+  const lineId = rawLineId.startsWith('@') ? rawLineId : '@' + rawLineId;
+  const encodedLineId = encodeURIComponent(lineId);
+  const encodedText = encodeURIComponent(text);
+  window.open(`https://line.me/R/oaMessage/${encodedLineId}/?${encodedText}`, '_blank');
 }
 
 function copyList() {
