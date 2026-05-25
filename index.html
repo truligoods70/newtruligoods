@@ -609,13 +609,18 @@ function closeAdmin() {
   document.getElementById('adminStatus').classList.add('hidden');
 }
 
+let selectedImageFile = null;
+
 function previewImg(input) {
   if (input.files && input.files[0]) {
+    selectedImageFile = input.files[0];
     const reader = new FileReader();
     reader.onload = e => {
       const prev = document.getElementById('adminImgPreview');
       prev.src = e.target.result;
       prev.classList.remove('hidden');
+      document.getElementById('adminImgUrl').value = '';
+      document.querySelector('.img-upload-area p').textContent = selectedImageFile.name;
     };
     reader.readAsDataURL(input.files[0]);
   }
@@ -627,7 +632,7 @@ async function submitProduct() {
   const price = document.getElementById('adminPrice').value;
   const cost = document.getElementById('adminCost').value;
   const stock = document.getElementById('adminStock').value;
-  const imgUrl = document.getElementById('adminImgUrl').value.trim();
+  let imgUrl = document.getElementById('adminImgUrl').value.trim();
   const desc = document.getElementById('adminDesc').value.trim();
   const inStock = document.getElementById('adminInStock').checked ? '是' : '';
   const inLive = document.getElementById('adminInLive').checked ? '是' : '';
@@ -636,31 +641,58 @@ async function submitProduct() {
     showAdminStatus('請填寫分類、商品名稱和售價', 'err');
     return;
   }
-
-  const statusEl = document.getElementById('adminStatus');
-  statusEl.className = 'status-msg';
-  statusEl.textContent = '送出中...';
-  statusEl.classList.remove('hidden');
-
   if (!APPS_SCRIPT_URL) {
     showAdminStatus('⚠️ 請先設定 Google Apps Script 網址', 'err');
     return;
   }
 
+  showAdminStatus('送出中，請稍候...', 'ok');
+
   try {
+    // 如果有選圖片，先上傳到 Google Drive
+    if (selectedImageFile && !imgUrl) {
+      showAdminStatus('📷 圖片上傳中...', 'ok');
+      imgUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async e => {
+          try {
+            const base64 = e.target.result.split(',')[1];
+            const res = await fetch(APPS_SCRIPT_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'uploadImage',
+                category: cat,
+                imageData: base64,
+                fileName: selectedImageFile.name,
+                mimeType: selectedImageFile.type
+              })
+            });
+            const json = await res.json();
+            if (json.url) resolve(json.url);
+            else resolve('');
+          } catch(err) { resolve(''); }
+        };
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(selectedImageFile);
+      });
+    }
+
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sheet: cat, name, price, cost, stock, img: imgUrl, desc, visible: '顯示', inStock, inLive })
     });
+
     showAdminStatus('✓ 商品已新增！', 'ok');
-    // Reset form
     ['adminCat','adminName','adminPrice','adminCost','adminDesc','adminImgUrl'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('adminStock').value = '有貨';
     document.getElementById('adminInStock').checked = false;
     document.getElementById('adminInLive').checked = false;
     document.getElementById('adminImgPreview').classList.add('hidden');
+    document.querySelector('.img-upload-area p').textContent = '點擊上傳圖片';
+    selectedImageFile = null;
     setTimeout(() => loadAllProducts(), 1500);
   } catch(e) {
     showAdminStatus('發生錯誤，請稍後再試', 'err');
@@ -672,7 +704,7 @@ function showAdminStatus(msg, type) {
   el.textContent = msg;
   el.className = `status-msg status-${type}`;
   el.classList.remove('hidden');
-}https://github.com/truligoods70/newtruligoods/blob/main/index.html
+}
 
 // ===== TOAST =====
 function showToast(msg) {
