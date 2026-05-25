@@ -424,7 +424,7 @@ async function loadSheet(sheetName) {
       visible: r.c[6]?.v !== '隱藏',
       inStock: r.c[7]?.v === '是',
       inLive: r.c[8]?.v === '是',
-    })).filter(p => p.name && p.visible);
+    })).filter(p => p.name && p.name !== '商品名稱' && typeof p.price === 'number' && p.visible);
   } catch(e) { return []; }
 }
 
@@ -672,7 +672,7 @@ function showAdminStatus(msg, type) {
   el.textContent = msg;
   el.className = `status-msg status-${type}`;
   el.classList.remove('hidden');
-}
+}https://github.com/truligoods70/newtruligoods/blob/main/index.html
 
 // ===== TOAST =====
 function showToast(msg) {
