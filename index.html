@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初立選物 Truligoods</title>
+<!-- INDEX 修正版 2026-05-25 NO-REGEX-LINE391 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -384,11 +385,12 @@ function showAdminBtn() {
 // ===== LOAD DATA =====
 
 function safeTextToHtml(value) {
-  return String(value || '')
+  const text = String(value || '');
+  return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/\n/g, '<br>');
+    .split('\n').join('<br>');
 }
 
 function applySiteText() {
