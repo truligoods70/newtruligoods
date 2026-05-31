@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初立選物 Truligoods</title>
-<!-- INDEX 修正版 2026-05-25 NO-REGEX-LINE391 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -80,6 +79,10 @@ main{flex:1;padding:24px}
 .card-desc{font-size:11px;color:var(--stone);margin-bottom:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .card-footer{display:flex;align-items:center;justify-content:space-between}
 .card-price{font-size:15px;font-weight:500;color:var(--olive-dk)}
+.card-stock{font-size:11px;color:var(--stone);margin-top:6px;line-height:1.4}
+.card-stock strong{color:var(--olive-dk);font-weight:700}
+.card-stock.preorder{color:#e65100}
+.card-stock.sold{color:#c62828}
 .add-btn{background:var(--warm);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;color:var(--ink)}
 .add-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 .add-btn.added{background:var(--olive);color:#fff;border-color:var(--olive)}
@@ -308,6 +311,10 @@ input:checked+.slider:before{transform:translateX(20px)}
         </select>
       </div>
       <div class="form-group">
+        <label class="form-label">現貨數量</label>
+        <input class="form-input" id="adminQty" placeholder="例：3；若填 0 會顯示預購" type="number" min="0">
+      </div>
+      <div class="form-group">
         <label class="form-label">商品圖片</label>
         <div class="img-upload-area" onclick="document.getElementById('adminImgFile').click()">
           <input type="file" id="adminImgFile" accept="image/*" onchange="previewImg(this)">
@@ -357,14 +364,21 @@ let currentCat = '全部';
 
 // ===== PASSWORD =====
 function checkPassword() {
-  const pw = document.getElementById('pwInput').value.trim();
+  const input = document.getElementById('pwInput');
+  const pw = String(input.value || '').trim();
   const err = document.getElementById('gateError');
-  if (pw === config.clientPw || pw === config.adminPw) {
+
+  // Chrome 有時候讀取 Google Sheet 快取較慢，這裡保留固定備援密碼，避免按鈕完全沒反應。
+  const clientPw = String(config.clientPw || '5936').trim();
+  const adminPw = String(config.adminPw || '1013jing').trim();
+
+  if (pw === clientPw || pw === adminPw) {
     document.getElementById('gate').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    if (pw === config.adminPw) showAdminBtn();
+    if (pw === adminPw && !document.getElementById('adminQuickBtn')) showAdminBtn();
     updateCartBadge();
   } else {
+    err.textContent = '密碼錯誤，請再試一次';
     err.style.opacity = '1';
     setTimeout(() => err.style.opacity = '0', 2500);
   }
@@ -376,6 +390,7 @@ document.addEventListener('keydown', e => {
 
 function showAdminBtn() {
   const btn = document.createElement('button');
+  btn.id = 'adminQuickBtn';
   btn.innerHTML = '<i class="ti ti-settings"></i>';
   btn.style.cssText = 'position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--olive);color:var(--ink);border:none;cursor:pointer;font-size:20px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center';
   btn.onclick = () => document.getElementById('adminPanel').classList.remove('hidden');
@@ -385,12 +400,11 @@ function showAdminBtn() {
 // ===== LOAD DATA =====
 
 function safeTextToHtml(value) {
-  const text = String(value || '');
-  return text
+  return String(value || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .split('\n').join('<br>');
+    .replace(/\n/g, '<br>');
 }
 
 function applySiteText() {
@@ -459,6 +473,7 @@ async function loadSheet(sheetName) {
       visible: r.c[6]?.v !== '隱藏',
       inStock: r.c[7]?.v === '是',
       inLive: r.c[8]?.v === '是',
+      qty: r.c[9]?.v ?? '',
     })).filter(p => p.name && p.name !== '商品名稱' && typeof p.price === 'number' && p.visible);
   } catch(e) { return []; }
 }
@@ -494,6 +509,30 @@ function switchCat(cat, btn) {
 }
 
 // ===== RENDER =====
+function getProductQty(p) {
+  const n = Number(p.qty);
+  return Number.isFinite(n) && String(p.qty).trim() !== '' ? Math.max(0, Math.floor(n)) : null;
+}
+
+function isPreorderProduct(p) {
+  const qty = getProductQty(p);
+  return p.stock === '預購中' || qty === 0;
+}
+
+function getStockText(p) {
+  if (p.stock === '售完') {
+    return { cls: 'sold', html: '售完' };
+  }
+  const qty = getProductQty(p);
+  if (qty === 0 || p.stock === '預購中') {
+    return { cls: 'preorder', html: '預購｜預購商品 2-4 週後到貨' };
+  }
+  if (qty !== null) {
+    return { cls: '', html: `現貨數量：<strong>${qty}</strong> 個` };
+  }
+  return { cls: '', html: '現貨數量：請私訊確認' };
+}
+
 function renderProducts(cat) {
   let list = allProducts;
   if (cat === '現貨館') list = allProducts.filter(p => p.inStock);
@@ -507,20 +546,24 @@ function renderProducts(cat) {
   }
   grid.innerHTML = list.map(p => {
     const soldOut = p.stock === '售完';
+    const preorder = isPreorderProduct(p);
+    const stockInfo = getStockText(p);
     const inCart = cart.some(c => c.name === p.name && c.cat === p.cat);
     const imgHtml = p.img
       ? `<img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'">`
       : `<span class="card-img-placeholder">${catIcon(p.cat)}</span>`;
     const badges = [];
-    if (p.inStock) badges.push(`<span class="card-badge badge-現貨">現貨</span>`);
-    if (p.inLive) badges.push(`<span class="card-badge badge-連線">連線</span>`);
     if (soldOut) badges.push(`<span class="card-badge badge-售完">售完</span>`);
+    else if (preorder) badges.push(`<span class="card-badge badge-連線">預購</span>`);
+    else if (p.inStock) badges.push(`<span class="card-badge badge-現貨">現貨</span>`);
+    if (p.inLive) badges.push(`<span class="card-badge badge-連線">連線</span>`);
     return `
     <div class="product-card${soldOut?' sold-out':''}" data-name="${p.name}" data-cat="${p.cat}">
       <div class="card-img">${imgHtml}${badges.join('')}</div>
       <div class="card-body">
         <div class="card-name">${p.name}</div>
         ${p.desc ? `<div class="card-desc">${p.desc}</div>` : ''}
+        <div class="card-stock ${stockInfo.cls}">${stockInfo.html}</div>
         <div class="card-footer">
           <span class="card-price">NT$ ${Number(p.price).toLocaleString()}</span>
           <button class="add-btn${inCart?' added':''}" onclick="addToCart('${p.name}','${p.cat}',${p.price},'${p.img}',event)" ${soldOut?'disabled':''}>
@@ -581,6 +624,15 @@ function toggleCart() {
   if (open) renderCartItems();
 }
 
+function getCartStockNote(c) {
+  const p = allProducts.find(p => p.name === c.name && p.cat === c.cat);
+  if (!p) return '';
+  if (isPreorderProduct(p) && p.stock !== '售完') return '｜預購 2-4 週後到貨';
+  const qty = getProductQty(p);
+  if (qty !== null) return `｜現貨 ${qty} 個`;
+  return '';
+}
+
 function renderCartItems() {
   const el = document.getElementById('cartItems');
   const footer = document.getElementById('cartFooter');
@@ -599,7 +651,7 @@ function renderCartItems() {
       <div class="cart-item-img">${imgHtml}</div>
       <div class="cart-item-info">
         <div class="cart-item-name">${c.name}</div>
-        <div class="cart-item-cat">${c.cat}</div>
+        <div class="cart-item-cat">${c.cat}${getCartStockNote(c)}</div>
         <div class="qty-ctrl">
           <button class="qty-btn" onclick="changeQty('${c.name}','${c.cat}',-1)">−</button>
           <span class="qty-num">${c.qty}</span>
@@ -620,7 +672,8 @@ function buildListText() {
   let text = '📦 初立選物 購物清單\n';
   text += '─────────────────\n';
   cart.forEach(c => {
-    text += `▪ ${c.name}\n  ${c.cat} × ${c.qty} = NT$ ${(c.price * c.qty).toLocaleString()}\n`;
+    const note = getCartStockNote(c);
+    text += `▪ ${c.name}\n  ${c.cat}${note} × ${c.qty} = NT$ ${(c.price * c.qty).toLocaleString()}\n`;
   });
   text += '─────────────────\n';
   const total = cart.reduce((s, c) => s + c.price * c.qty, 0);
@@ -679,6 +732,7 @@ async function submitProduct() {
   const price = document.getElementById('adminPrice').value;
   const cost = document.getElementById('adminCost').value;
   const stock = document.getElementById('adminStock').value;
+  const qty = document.getElementById('adminQty').value;
   let imgUrl = document.getElementById('adminImgUrl').value.trim();
   const desc = document.getElementById('adminDesc').value.trim();
   const inStock = document.getElementById('adminInStock').checked ? '是' : '';
@@ -722,6 +776,7 @@ async function submitProduct() {
       price,
       cost,
       stock,
+      qty,
       img: imgUrl,
       desc,
       visible: '顯示',
@@ -745,6 +800,7 @@ async function submitProduct() {
 
     ['adminCat','adminName','adminPrice','adminCost','adminDesc','adminImgUrl'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('adminStock').value = '有貨';
+    document.getElementById('adminQty').value = '';
     document.getElementById('adminInStock').checked = false;
     document.getElementById('adminInLive').checked = false;
     document.getElementById('adminImgPreview').classList.add('hidden');
@@ -776,6 +832,10 @@ function showToast(msg) {
 
 // ===== INIT =====
 async function init() {
+  // 多綁一次按鈕事件，避免部分瀏覽器不吃 inline onclick。
+  const gateButton = document.querySelector('.gate-btn');
+  if (gateButton) gateButton.addEventListener('click', checkPassword);
+
   await loadConfig();
   await loadAllProducts();
 }
