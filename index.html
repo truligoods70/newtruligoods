@@ -127,6 +127,9 @@ main{flex:1;padding:24px}
 .form-label{font-size:12px;font-weight:500;color:var(--stone);margin-bottom:6px;display:block;letter-spacing:.04em}
 .form-input,.form-select,.form-textarea{width:100%;padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:border-color .2s}
 .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--olive)}
+.cat-chip-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cat-chip{border:1px solid var(--border);background:#fff;color:var(--stone);border-radius:999px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer}
+.cat-chip.active{background:var(--olive);border-color:var(--olive);color:#fff;font-weight:700}
 .form-textarea{resize:vertical;min-height:80px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .img-upload-area{border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:#fff}
@@ -176,8 +179,13 @@ input:checked+.slider:before{transform:translateX(20px)}
   .mobile-cats{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;border-bottom:1px solid var(--border)}
   .product-grid{grid-template-columns:repeat(2,1fr)}
   #cartPanel{width:100%}
-  .admin-modal{max-height:100vh;border-radius:0}
+  #adminPanel{align-items:stretch;justify-content:stretch}
+  .admin-modal{height:100dvh;max-height:100dvh;border-radius:0;width:100%;max-width:none}
+  .admin-header{padding-top:max(18px,env(safe-area-inset-top));flex-shrink:0}
+  .admin-body{padding-bottom:120px;-webkit-overflow-scrolling:touch}
+  .admin-sticky-footer{padding-bottom:max(24px,env(safe-area-inset-bottom))}
 }
+
 @media(min-width:601px){.mobile-cats{display:none}}
 </style>
 </head>
@@ -279,7 +287,7 @@ input:checked+.slider:before{transform:translateX(20px)}
     <div class="admin-body">
       <div class="form-group">
         <label class="form-label">商品分類 *</label>
-        <select class="form-select" id="adminCat">
+        <select class="form-select" id="adminCat" onchange="syncCatChips()">
           <option value="">請選擇分類</option>
           <option value="食品">食品</option>
           <option value="美妝">美妝</option>
@@ -287,6 +295,13 @@ input:checked+.slider:before{transform:translateX(20px)}
           <option value="文具物品">文具物品</option>
           <option value="服飾包包">服飾包包</option>
         </select>
+        <div class="cat-chip-wrap" aria-label="商品分類快速選擇">
+          <button type="button" class="cat-chip" data-cat="食品" onclick="selectAdminCat('食品')">食品</button>
+          <button type="button" class="cat-chip" data-cat="美妝" onclick="selectAdminCat('美妝')">美妝</button>
+          <button type="button" class="cat-chip" data-cat="保健食品" onclick="selectAdminCat('保健食品')">保健食品</button>
+          <button type="button" class="cat-chip" data-cat="文具物品" onclick="selectAdminCat('文具物品')">文具物品</button>
+          <button type="button" class="cat-chip" data-cat="服飾包包" onclick="selectAdminCat('服飾包包')">服飾包包</button>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">商品名稱 *</label>
@@ -393,7 +408,7 @@ function showAdminBtn() {
   btn.id = 'adminQuickBtn';
   btn.innerHTML = '<i class="ti ti-settings"></i>';
   btn.style.cssText = 'position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--olive);color:var(--ink);border:none;cursor:pointer;font-size:20px;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center';
-  btn.onclick = () => document.getElementById('adminPanel').classList.remove('hidden');
+  btn.onclick = openAdmin;
   document.body.appendChild(btn);
 }
 
@@ -704,6 +719,29 @@ function copyList() {
 }
 
 // ===== ADMIN =====
+function openAdmin() {
+  const panel = document.getElementById('adminPanel');
+  panel.classList.remove('hidden');
+  setTimeout(() => {
+    const body = panel.querySelector('.admin-body');
+    if (body) body.scrollTop = 0;
+  }, 50);
+  syncCatChips();
+}
+
+function selectAdminCat(cat) {
+  const select = document.getElementById('adminCat');
+  if (select) select.value = cat;
+  syncCatChips();
+}
+
+function syncCatChips() {
+  const value = document.getElementById('adminCat')?.value || '';
+  document.querySelectorAll('.cat-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === value);
+  });
+}
+
 function closeAdmin() {
   document.getElementById('adminPanel').classList.add('hidden');
   document.getElementById('adminStatus').classList.add('hidden');
@@ -799,6 +837,7 @@ async function submitProduct() {
     showAdminStatus('✓ 已送出！請等 3 秒後重新整理商品資料', 'ok');
 
     ['adminCat','adminName','adminPrice','adminCost','adminDesc','adminImgUrl'].forEach(id => document.getElementById(id).value = '');
+    syncCatChips();
     document.getElementById('adminStock').value = '有貨';
     document.getElementById('adminQty').value = '';
     document.getElementById('adminInStock').checked = false;
