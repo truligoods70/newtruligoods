@@ -76,7 +76,7 @@ main{flex:1;padding:24px}
 .badge-售完{background:#fce4ec;color:#c62828}
 .card-body{padding:10px 12px}
 .card-name{font-size:13px;font-weight:500;margin-bottom:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.card-desc{font-size:11px;color:var(--stone);margin-bottom:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.card-desc{font-size:11px;color:var(--stone);margin-bottom:8px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:31px}
 .card-footer{display:flex;align-items:center;justify-content:space-between}
 .card-price{font-size:15px;font-weight:500;color:var(--olive-dk)}
 .card-stock{font-size:11px;color:var(--olive-dk);margin-top:6px;line-height:1.4;font-weight:500}
@@ -525,7 +525,7 @@ function getStockText(p) {
   }
   const qty = getProductQty(p);
   if (qty === 0 || p.stock === '預購中') {
-    return { cls: 'preorder', html: '預購｜預購商品 2-4 週後到貨' };
+    return { cls: 'preorder', html: '預購商品 2-4 週後到貨' };
   }
   if (qty !== null) {
     return { cls: '', html: `現貨數量：<strong>${qty}</strong> 個` };
@@ -627,7 +627,7 @@ function toggleCart() {
 function getCartStockNote(c) {
   const p = allProducts.find(p => p.name === c.name && p.cat === c.cat);
   if (!p) return '';
-  if (isPreorderProduct(p) && p.stock !== '售完') return '｜預購 2-4 週後到貨';
+  if (isPreorderProduct(p) && p.stock !== '售完') return '｜預購商品 2-4 週後到貨';
   const qty = getProductQty(p);
   if (qty !== null) return `｜現貨 ${qty} 個`;
   return '';
