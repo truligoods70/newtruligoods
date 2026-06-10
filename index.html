@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初立選物 Truligoods</title>
+<!-- detail-costco-v3 robust sheet loader -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -523,36 +524,65 @@ async function loadConfig() {
   document.getElementById('loading').style.display = 'none';
 }
 
+function normalizeCell(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+}
+
+function normalizeNumber(value) {
+  if (value === null || value === undefined || value === '') return 0;
+  if (typeof value === 'number') return value;
+  const n = Number(String(value).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function fetchWithTimeout(url, ms = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { signal: controller.signal, cache: 'no-store' })
+    .finally(() => clearTimeout(timer));
+}
+
 async function loadSheet(sheetName) {
   try {
-    const res = await fetch(SHEET_URL + encodeURIComponent(sheetName));
+    const url = SHEET_URL + encodeURIComponent(sheetName) + '&range=A:L&_=' + Date.now();
+    const res = await fetchWithTimeout(url, 8000);
     const text = await res.text();
     const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?$/, ''));
-    const rows = json.table.rows;
-    return rows.slice(0).map(r => ({
-      cat: sheetName,
-      name: r.c[0]?.v || '',
-      price: r.c[1]?.v || 0,
-      cost: r.c[2]?.v || 0,
-      stock: r.c[3]?.v || '有貨',
-      img: r.c[4]?.v || '',
-      desc: r.c[5]?.v || '',
-      visible: r.c[6]?.v !== '隱藏',
-      inStock: r.c[7]?.v === '是',
-      inLive: r.c[8]?.v === '是',
-      qty: r.c[9]?.v ?? '',
-      detail: r.c[10]?.v || '',
-      inCostco: r.c[11]?.v === '是',
-    })).filter(p => p.name && p.name !== '商品名稱' && typeof p.price === 'number' && p.visible);
-  } catch(e) { return []; }
+    const rows = json.table.rows || [];
+    return rows.map(r => {
+      const price = normalizeNumber(r.c[1]?.v);
+      return {
+        cat: sheetName,
+        name: normalizeCell(r.c[0]?.v),
+        price,
+        cost: normalizeNumber(r.c[2]?.v),
+        stock: normalizeCell(r.c[3]?.v) || '有貨',
+        img: normalizeCell(r.c[4]?.v),
+        desc: normalizeCell(r.c[5]?.v),
+        visible: normalizeCell(r.c[6]?.v) !== '隱藏',
+        inStock: normalizeCell(r.c[7]?.v) === '是',
+        inLive: normalizeCell(r.c[8]?.v) === '是',
+        qty: normalizeCell(r.c[9]?.v),
+        detail: normalizeCell(r.c[10]?.v),
+        inCostco: normalizeCell(r.c[11]?.v) === '是',
+      };
+    }).filter(p => p.name && p.name !== '商品名稱' && p.price > 0 && p.visible);
+  } catch(e) {
+    console.warn('loadSheet failed:', sheetName, e);
+    return [];
+  }
 }
 
 async function loadAllProducts() {
   const grid = document.getElementById('productGrid');
   try {
+    if (grid) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-package"></i><p>載入商品中...</p></div>`;
+    }
     const sheets = ['食品','美妝','保健食品','文具物品','服飾包包'];
-    const results = await Promise.all(sheets.map(loadSheet));
-    allProducts = results.flat();
+    const results = await Promise.allSettled(sheets.map(loadSheet));
+    allProducts = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
     buildNav();
     updateCategoryDesc('全部');
     renderProducts('全部');
