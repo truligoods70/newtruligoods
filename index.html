@@ -548,12 +548,20 @@ async function loadSheet(sheetName) {
 }
 
 async function loadAllProducts() {
-  const sheets = ['食品','美妝','保健食品','文具物品','服飾包包'];
-  const results = await Promise.all(sheets.map(loadSheet));
-  allProducts = results.flat();
-  buildNav();
-  updateCategoryDesc('全部');
-  renderProducts('全部');
+  const grid = document.getElementById('productGrid');
+  try {
+    const sheets = ['食品','美妝','保健食品','文具物品','服飾包包'];
+    const results = await Promise.all(sheets.map(loadSheet));
+    allProducts = results.flat();
+    buildNav();
+    updateCategoryDesc('全部');
+    renderProducts('全部');
+  } catch (err) {
+    console.error('loadAllProducts failed', err);
+    if (grid) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-alert-circle"></i><p>商品載入失敗，請重新整理或通知初立。</p></div>`;
+    }
+  }
 }
 
 // ===== NAV =====
@@ -621,6 +629,16 @@ function switchCat(cat, btn) {
   document.getElementById('sectionTitle').textContent = cat;
   updateCategoryDesc(cat);
   renderProducts(cat);
+}
+
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ===== RENDER =====
