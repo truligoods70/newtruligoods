@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初立選物 Truligoods</title>
-<!-- detail-costco-v3 robust sheet loader -->
+<!-- detail-costco-spec-promo-v1 robust sheet loader -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -73,13 +73,16 @@ main{flex:1;padding:24px}
 .card-img{aspect-ratio:1;overflow:hidden;background:var(--cream);display:flex;align-items:center;justify-content:center;position:relative}
 .card-img img{width:100%;height:100%;object-fit:cover}
 .card-img-placeholder{font-size:40px}
-.card-badge{position:absolute;top:8px;left:8px;font-size:9px;font-weight:500;padding:2px 8px;border-radius:10px}
+.card-badges{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;z-index:2}
+.card-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .badge-現貨{background:#e8f5e9;color:#2e7d32}
 .badge-連線{background:#fff3e0;color:#e65100}
 .badge-售完{background:#fce4ec;color:#c62828}
+.badge-promo{background:linear-gradient(135deg,#ff4d2d,#ff8a00);color:#fff;font-weight:900;box-shadow:0 3px 10px rgba(229,57,53,.28)}
 .card-body{padding:10px 12px}
 .card-name{font-size:13px;font-weight:500;margin-bottom:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card-desc{font-size:11px;color:var(--stone);margin-bottom:8px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:31px}
+.card-promo{display:inline-block;font-size:11px;font-weight:800;color:#d84315;background:#fff3e0;border:1px solid #ffd0a6;border-radius:999px;padding:3px 8px;margin:0 0 7px;line-height:1.35}
 .card-footer{display:flex;align-items:center;justify-content:space-between}
 .card-price{font-size:15px;font-weight:500;color:var(--olive-dk)}
 .card-stock{font-size:11px;color:var(--olive-dk);margin-top:6px;line-height:1.4;font-weight:500}
@@ -102,10 +105,12 @@ main{flex:1;padding:24px}
 .detail-img{width:100%;border-radius:12px;background:var(--cream);overflow:hidden;margin-bottom:14px;display:flex;align-items:center;justify-content:center}
 .detail-img img{width:100%;height:auto;display:block}
 .detail-price{font-size:20px;font-weight:700;color:var(--olive-dk);margin:10px 0}
+.detail-promo{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#ff4d2d,#ff8a00);color:#fff;font-weight:900;font-size:13px;border-radius:999px;padding:6px 12px;margin:2px 0 10px;box-shadow:0 3px 12px rgba(229,57,53,.25)}
 .detail-stock{font-size:13px;font-weight:700;color:var(--olive-dk);margin-bottom:12px}
 .detail-stock.preorder{color:#e65100}.detail-stock.sold{color:#c62828}
 .detail-desc{font-size:14px;color:var(--stone);line-height:1.8;white-space:pre-line;margin:10px 0 16px}
 .detail-full{font-size:14px;color:var(--ink);line-height:1.85;white-space:pre-line;border-top:1px solid var(--border);padding-top:14px}
+.detail-spec{margin:12px 0 14px}.detail-spec label{display:block;font-size:12px;font-weight:700;color:var(--stone);margin-bottom:6px}.detail-spec select{width:100%;padding:11px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;font-size:14px;color:var(--ink);font-family:'DM Sans',sans-serif}.card-spec{font-size:11px;color:var(--stone);margin-top:4px}
 .detail-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
 .detail-footer .add-btn{flex:1;padding:12px;font-size:14px;border-radius:10px}
 
@@ -383,6 +388,19 @@ input:checked+.slider:before{transform:translateX(20px)}
         <textarea class="form-textarea" id="adminDetail" placeholder="客人點開商品後看到的完整介紹文，可換行"></textarea>
       </div>
       <div class="form-group">
+        <label class="form-label">規格選項（價格一樣才使用）</label>
+        <input class="form-input" id="adminSpecOptions" placeholder="例：粉紅色玫瑰香,藍色無香" type="text">
+        <div style="font-size:11px;color:var(--stone);line-height:1.6;margin-top:6px">多個規格請用逗號分開。若不同規格價格不同，建議分成不同商品。</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">促銷標籤</label>
+        <div class="toggle-row">
+          <div><div class="toggle-label">顯示促銷標籤</div><div class="toggle-sub">例如限時特價、買一送一、闆娘推薦</div></div>
+          <label class="toggle"><input type="checkbox" id="adminPromoFlag"><span class="slider"></span></label>
+        </div>
+        <input class="form-input" id="adminPromoText" placeholder="例：限時特價｜售完為止" type="text" style="margin-top:8px">
+      </div>
+      <div class="form-group">
         <label class="form-label">出現位置</label>
         <div class="toggle-row">
           <div><div class="toggle-label">現貨館</div><div class="toggle-sub">立刻可出貨</div></div>
@@ -545,7 +563,7 @@ function fetchWithTimeout(url, ms = 8000) {
 
 async function loadSheet(sheetName) {
   try {
-    const url = SHEET_URL + encodeURIComponent(sheetName) + '&range=A:L&_=' + Date.now();
+    const url = SHEET_URL + encodeURIComponent(sheetName) + '&range=A:O&_=' + Date.now();
     const res = await fetchWithTimeout(url, 8000);
     const text = await res.text();
     const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?$/, ''));
@@ -566,6 +584,9 @@ async function loadSheet(sheetName) {
         qty: normalizeCell(r.c[9]?.v),
         detail: normalizeCell(r.c[10]?.v),
         inCostco: normalizeCell(r.c[11]?.v) === '是',
+        specOptions: normalizeCell(r.c[12]?.v),
+        promoFlag: normalizeCell(r.c[13]?.v) === '是',
+        promoText: normalizeCell(r.c[14]?.v),
       };
     }).filter(p => p.name && p.name !== '商品名稱' && p.price > 0 && p.visible);
   } catch(e) {
@@ -671,6 +692,22 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+
+function getSpecOptions(p) {
+  const raw = String(p?.specOptions || '').trim();
+  if (!raw) return [];
+  return raw.split(/[,，\n]/).map(s => s.trim()).filter(Boolean);
+}
+
+function getPromoText(p) {
+  if (!p || !p.promoFlag) return '';
+  return String(p.promoText || '特價優惠').trim() || '特價優惠';
+}
+
+function cartKeyParts(name, cat, spec) {
+  return [name || '', cat || '', spec || ''].join('||');
+}
+
 // ===== RENDER =====
 function getProductQty(p) {
   const n = Number(p.qty);
@@ -713,21 +750,27 @@ function renderProducts(cat) {
     const soldOut = p.stock === '售完';
     const preorder = isPreorderProduct(p);
     const stockInfo = getStockText(p);
-    const inCart = cart.some(c => c.name === p.name && c.cat === p.cat);
+    const specOptions = getSpecOptions(p);
+    const hasSpecs = specOptions.length > 0;
+    const inCart = !hasSpecs && cart.some(c => c.name === p.name && c.cat === p.cat && !c.spec);
+    const promoText = getPromoText(p);
     const imgHtml = p.img
       ? `<img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'">`
       : `<span class="card-img-placeholder">${catIcon(p.cat)}</span>`;
     const badges = [];
+    if (promoText) badges.push(`<span class="card-badge badge-promo">🔥 ${escapeHtml(promoText.split('｜')[0].trim())}</span>`);
     if (soldOut) badges.push(`<span class="card-badge badge-售完">售完</span>`);
     else if (preorder) badges.push(`<span class="card-badge badge-連線">預購</span>`);
     else if (p.inStock) badges.push(`<span class="card-badge badge-現貨">現貨</span>`);
     if (p.inLive) badges.push(`<span class="card-badge badge-連線">限時</span>`);
     return `
     <div class="product-card${soldOut?' sold-out':''}" data-name="${escapeHtml(p.name)}" data-cat="${escapeHtml(p.cat)}" onclick="openProductDetail(${productIndex})">
-      <div class="card-img">${imgHtml}${badges.join('')}</div>
+      <div class="card-img">${imgHtml}<div class="card-badges">${badges.join('')}</div></div>
       <div class="card-body">
         <div class="card-name">${escapeHtml(p.name)}</div>
         ${p.desc ? `<div class="card-desc">${escapeHtml(p.desc)}</div>` : ''}
+        ${promoText ? `<div class="card-promo">🔥 ${escapeHtml(promoText)}</div>` : ''}
+        ${hasSpecs ? `<div class="card-spec">可選規格：${specOptions.length} 種</div>` : ''}
         <div class="card-stock ${stockInfo.cls}">${stockInfo.html}</div>
         <div class="detail-hint">點開看詳細介紹</div>
         <div class="card-footer">
@@ -751,14 +794,19 @@ function openProductDetail(index) {
   if (!p) return;
   const soldOut = p.stock === '售完';
   const stockInfo = getStockText(p);
+  const specOptions = getSpecOptions(p);
+  const promoText = getPromoText(p);
+  const specHtml = specOptions.length ? `<div class="detail-spec"><label>請選擇規格</label><select id="detailSpecSelect"><option value="">請選擇</option>${specOptions.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}</select></div>` : '';
   const imgHtml = p.img
     ? `<div class="detail-img"><img src="${p.img}" alt="${escapeHtml(p.name)}"></div>`
     : `<div class="detail-img" style="min-height:180px;font-size:56px">${catIcon(p.cat)}</div>`;
   document.getElementById('detailName').textContent = p.name;
   document.getElementById('detailBody').innerHTML = `
     ${imgHtml}
+    ${promoText ? `<div class="detail-promo">🔥 ${escapeHtml(promoText)}</div>` : ''}
     <div class="detail-price">NT$ ${Number(p.price).toLocaleString()}</div>
     <div class="detail-stock ${stockInfo.cls}">${stockInfo.html}</div>
+    ${specHtml}
     ${p.desc ? `<div class="detail-desc">${escapeHtml(p.desc)}</div>` : ''}
     ${p.detail ? `<div class="detail-full">${escapeHtml(p.detail)}</div>` : '<div class="detail-full">目前沒有更多介紹，歡迎私訊初立詢問。</div>'}
   `;
@@ -775,36 +823,68 @@ function closeProductDetail() {
 
 // ===== CART =====
 function addToCartByIndex(index, e) {
+  if (e && e.stopPropagation) e.stopPropagation();
   const p = allProducts[index];
   if (!p) return;
-  addToCart(p.name, p.cat, p.price, p.img, e);
+
+  const specOptions = getSpecOptions(p);
+  let spec = '';
+  if (specOptions.length) {
+    const select = document.getElementById('detailSpecSelect');
+    spec = select ? String(select.value || '').trim() : '';
+    if (!spec) {
+      openProductDetail(index);
+      showToast('請先選擇規格');
+      return;
+    }
+  }
+
+  addToCart(p.name, p.cat, p.price, p.img, e, spec);
 }
 
-function addToCart(name, cat, price, img, e) {
+function addToCart(name, cat, price, img, e, spec = '') {
   if (e && e.stopPropagation) e.stopPropagation();
-  const existing = cart.find(c => c.name === name && c.cat === cat);
+  spec = String(spec || '').trim();
+  const existing = cart.find(c => c.name === name && c.cat === cat && String(c.spec || '') === spec);
   if (existing) { existing.qty++; }
-  else { cart.push({ name, cat, price, img, qty: 1 }); }
+  else { cart.push({ name, cat, price, img, qty: 1, spec }); }
   saveCart();
   updateCartBadge();
   renderCartItems();
-  showToast(`已加入：${name}`);
+  showToast(`已加入：${name}${spec ? '｜' + spec : ''}`);
   renderProducts(currentCat);
 }
 
-function removeFromCart(name, cat) {
-  cart = cart.filter(c => !(c.name === name && c.cat === cat));
+function removeCartIndex(index) {
+  cart.splice(index, 1);
   saveCart();
   updateCartBadge();
   renderCartItems();
   renderProducts(currentCat);
 }
 
-function changeQty(name, cat, delta) {
-  const item = cart.find(c => c.name === name && c.cat === cat);
+function changeCartQtyIndex(index, delta) {
+  const item = cart[index];
   if (!item) return;
   item.qty += delta;
-  if (item.qty <= 0) removeFromCart(name, cat);
+  if (item.qty <= 0) removeCartIndex(index);
+  else { saveCart(); renderCartItems(); updateCartBadge(); }
+}
+
+// 舊函式保留，避免舊購物車或舊按鈕出錯
+function removeFromCart(name, cat, spec = '') {
+  cart = cart.filter(c => !(c.name === name && c.cat === cat && String(c.spec || '') === String(spec || '')));
+  saveCart();
+  updateCartBadge();
+  renderCartItems();
+  renderProducts(currentCat);
+}
+
+function changeQty(name, cat, delta, spec = '') {
+  const item = cart.find(c => c.name === name && c.cat === cat && String(c.spec || '') === String(spec || ''));
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) removeFromCart(name, cat, spec);
   else { saveCart(); renderCartItems(); updateCartBadge(); }
 }
 
@@ -841,25 +921,27 @@ function renderCartItems() {
     return;
   }
   footer.style.display = 'block';
-  el.innerHTML = cart.map(c => {
+  el.innerHTML = cart.map((c, idx) => {
     const imgHtml = c.img
-      ? `<img src="${c.img}" alt="${c.name}" onerror="this.parentElement.innerHTML='${catIcon(c.cat)}'">`
+      ? `<img src="${c.img}" alt="${escapeHtml(c.name)}" onerror="this.parentElement.innerHTML='${catIcon(c.cat)}'">`
       : catIcon(c.cat);
+    const specText = c.spec ? `<div class="cart-item-cat">規格：${escapeHtml(c.spec)}</div>` : '';
     return `
     <div class="cart-item">
       <div class="cart-item-img">${imgHtml}</div>
       <div class="cart-item-info">
-        <div class="cart-item-name">${c.name}</div>
-        <div class="cart-item-cat">${c.cat}${getCartStockNote(c)}</div>
+        <div class="cart-item-name">${escapeHtml(c.name)}</div>
+        <div class="cart-item-cat">${escapeHtml(c.cat)}${escapeHtml(getCartStockNote(c))}</div>
+        ${specText}
         <div class="qty-ctrl">
-          <button class="qty-btn" onclick="changeQty('${c.name}','${c.cat}',-1)">−</button>
+          <button class="qty-btn" onclick="changeCartQtyIndex(${idx},-1)">−</button>
           <span class="qty-num">${c.qty}</span>
-          <button class="qty-btn" onclick="changeQty('${c.name}','${c.cat}',1)">+</button>
+          <button class="qty-btn" onclick="changeCartQtyIndex(${idx},1)">+</button>
         </div>
       </div>
       <div>
         <div class="cart-item-price">NT$ ${(c.price * c.qty).toLocaleString()}</div>
-        <button onclick="removeFromCart('${c.name}','${c.cat}')" style="display:block;margin-top:6px;background:none;border:none;color:var(--stone);cursor:pointer;font-size:12px">移除</button>
+        <button onclick="removeCartIndex(${idx})" style="display:block;margin-top:6px;background:none;border:none;color:var(--stone);cursor:pointer;font-size:12px">移除</button>
       </div>
     </div>`;
   }).join('');
@@ -872,7 +954,7 @@ function buildListText() {
   text += '─────────────────\n';
   cart.forEach(c => {
     const note = getCartStockNote(c);
-    text += `▪ ${c.name}\n  ${c.cat}${note} × ${c.qty} = NT$ ${(c.price * c.qty).toLocaleString()}\n`;
+    text += `▪ ${c.name}\n${c.spec ? '  規格：' + c.spec + '\n' : ''}  ${c.cat}${note} × ${c.qty} = NT$ ${(c.price * c.qty).toLocaleString()}\n`;
   });
   text += '─────────────────\n';
   const total = cart.reduce((s, c) => s + c.price * c.qty, 0);
@@ -958,6 +1040,9 @@ async function submitProduct() {
   let imgUrl = document.getElementById('adminImgUrl').value.trim();
   const desc = document.getElementById('adminDesc').value.trim();
   const detail = document.getElementById('adminDetail').value.trim();
+  const specOptions = document.getElementById('adminSpecOptions').value.trim();
+  const promoFlag = document.getElementById('adminPromoFlag').checked ? '是' : '';
+  const promoText = document.getElementById('adminPromoText').value.trim();
   const inStock = document.getElementById('adminInStock').checked ? '是' : '';
   const inLive = document.getElementById('adminInLive').checked ? '是' : '';
   const inCostco = document.getElementById('adminInCostco').checked ? '是' : '';
@@ -1008,6 +1093,9 @@ async function submitProduct() {
       inStock,
       inLive,
       inCostco,
+      specOptions,
+      promoFlag,
+      promoText,
       imageData,
       fileName,
       mimeType
@@ -1024,13 +1112,14 @@ async function submitProduct() {
 
     showAdminStatus('✓ 已送出！請等 3 秒後重新整理商品資料', 'ok');
 
-    ['adminCat','adminName','adminPrice','adminCost','adminDesc','adminDetail','adminImgUrl'].forEach(id => document.getElementById(id).value = '');
+    ['adminCat','adminName','adminPrice','adminCost','adminDesc','adminDetail','adminSpecOptions','adminPromoText','adminImgUrl'].forEach(id => document.getElementById(id).value = '');
     syncCatChips();
     document.getElementById('adminStock').value = '有貨';
     document.getElementById('adminQty').value = '';
     document.getElementById('adminInStock').checked = false;
     document.getElementById('adminInLive').checked = false;
     document.getElementById('adminInCostco').checked = false;
+    document.getElementById('adminPromoFlag').checked = false;
     document.getElementById('adminImgPreview').classList.add('hidden');
     document.querySelector('.img-upload-area p').textContent = '點擊上傳圖片';
     selectedImageFile = null;
