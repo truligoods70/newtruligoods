@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初立選物 Truligoods</title>
-<!-- detail-costco-spec-promo-v1 robust sheet loader -->
+<!-- promo-spec-search-reverse-v1 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -65,6 +65,16 @@ main{flex:1;padding:24px}
 .section-title{font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700}
 .category-desc{margin:-6px 0 18px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:10px;color:var(--stone);font-size:13px;line-height:1.7;white-space:pre-line}
 .category-desc:empty{display:none}
+
+.search-wrap{margin:-4px 0 18px;display:flex;flex-direction:column;gap:8px}
+.search-box{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:0 2px 10px rgba(0,0,0,.025)}
+.search-box i{font-size:18px;color:var(--stone);flex-shrink:0}
+.search-input{border:none;outline:none;background:transparent;width:100%;font-size:14px;color:var(--ink);font-family:'DM Sans',sans-serif}
+.search-input::placeholder{color:rgba(138,132,112,.75)}
+.search-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.search-count{font-size:12px;color:var(--stone);line-height:1.5}
+.clear-search{border:1px solid var(--border);background:#fff;color:var(--stone);border-radius:999px;padding:5px 10px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.clear-search:hover{background:var(--cream);color:var(--ink)}
 .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
 
 /* ===== PRODUCT CARD ===== */
@@ -200,6 +210,7 @@ input:checked+.slider:before{transform:translateX(20px)}
 /* ===== MOBILE ===== */
 @media(max-width:600px){
   .hero{flex-direction:column;text-align:center}
+  .search-wrap{margin-top:-8px}
   .nav-cats{display:none}
   .mobile-cats{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;border-bottom:1px solid var(--border)}
   .product-grid{grid-template-columns:repeat(2,1fr)}
@@ -273,6 +284,16 @@ input:checked+.slider:before{transform:translateX(20px)}
       <h2 class="section-title" id="sectionTitle">全部商品</h2>
     </div>
     <div class="category-desc" id="categoryDesc"></div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input class="search-input" id="productSearch" type="search" placeholder="搜尋商品關鍵字，例如：咖啡、面膜、好市多" autocomplete="off" oninput="handleSearchInput(this.value)">
+      </div>
+      <div class="search-row">
+        <div class="search-count" id="searchCount"></div>
+        <button class="clear-search hidden" id="clearSearchBtn" onclick="clearProductSearch()">清除搜尋</button>
+      </div>
+    </div>
     <div class="product-grid" id="productGrid">
       <div class="empty-state" style="grid-column:1/-1">
         <i class="ti ti-package"></i>
@@ -437,6 +458,7 @@ let config = {};
 let allProducts = [];
 let cart = JSON.parse(localStorage.getItem('tg_cart') || '[]');
 let currentCat = '全部';
+let searchKeyword = '';
 
 // ===== PASSWORD =====
 function checkPassword() {
@@ -708,6 +730,51 @@ function cartKeyParts(name, cat, spec) {
   return [name || '', cat || '', spec || ''].join('||');
 }
 
+
+// ===== SEARCH =====
+function normalizeSearchText(value) {
+  return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function productMatchesSearch(p, keyword) {
+  const q = normalizeSearchText(keyword);
+  if (!q) return true;
+  const haystack = [
+    p.name, p.cat, p.desc, p.detail, p.stock,
+    p.specOptions, p.promoText,
+    p.inStock ? '現貨' : '',
+    p.inLive ? '限時連線 連線' : '',
+    p.inCostco ? '好市多 costco' : '',
+    getSpecOptions(p).join(' ')
+  ].map(v => String(v || '').toLowerCase()).join(' ');
+  return haystack.includes(q);
+}
+
+function handleSearchInput(value) {
+  searchKeyword = String(value || '').trim();
+  renderProducts(currentCat);
+}
+
+function clearProductSearch() {
+  searchKeyword = '';
+  const input = document.getElementById('productSearch');
+  if (input) input.value = '';
+  renderProducts(currentCat);
+}
+
+function updateSearchUi(resultCount, baseCount) {
+  const countEl = document.getElementById('searchCount');
+  const clearBtn = document.getElementById('clearSearchBtn');
+  if (!countEl || !clearBtn) return;
+  if (searchKeyword) {
+    countEl.textContent = `搜尋「${searchKeyword}」：找到 ${resultCount} 個商品`;
+    clearBtn.classList.remove('hidden');
+  } else {
+    countEl.textContent = baseCount ? `目前顯示 ${baseCount} 個商品` : '';
+    clearBtn.classList.add('hidden');
+  }
+}
+
 // ===== RENDER =====
 function getProductQty(p) {
   const n = Number(p.qty);
@@ -734,15 +801,26 @@ function getStockText(p) {
 }
 
 function renderProducts(cat) {
-  let list = allProducts;
-  if (cat === '現貨館') list = allProducts.filter(p => p.inStock);
-  else if (cat === '限時連線' || cat === '連線館') list = allProducts.filter(p => p.inLive);
-  else if (cat === '好市多專區') list = allProducts.filter(p => p.inCostco);
-  else if (cat !== '全部') list = allProducts.filter(p => p.cat === cat);
+  let baseList = allProducts;
+  if (cat === '現貨館') baseList = allProducts.filter(p => p.inStock);
+  else if (cat === '限時連線' || cat === '連線館') baseList = allProducts.filter(p => p.inLive);
+  else if (cat === '好市多專區') baseList = allProducts.filter(p => p.inCostco);
+  else if (cat !== '全部') baseList = allProducts.filter(p => p.cat === cat);
+
+  // Sheet 越下面的商品越新，前台反向顯示，讓最新新增的商品排最上面。
+  let list = [...baseList].reverse();
+
+  // 有輸入搜尋字時，在目前館別/分類中搜尋商品名稱、短說明、詳細介紹、規格與促銷文字。
+  if (searchKeyword) {
+    list = list.filter(p => productMatchesSearch(p, searchKeyword));
+  }
+
+  updateSearchUi(list.length, baseList.length);
 
   const grid = document.getElementById('productGrid');
   if (!list.length) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-package"></i><p>這個分類還沒有商品</p></div>`;
+    const msg = searchKeyword ? `找不到「${escapeHtml(searchKeyword)}」相關商品` : '這個分類還沒有商品';
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-package"></i><p>${msg}</p></div>`;
     return;
   }
   grid.innerHTML = list.map(p => {
