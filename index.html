@@ -840,7 +840,6 @@ function renderProducts(cat) {
     if (soldOut) badges.push(`<span class="card-badge badge-售完">售完</span>`);
     else if (preorder) badges.push(`<span class="card-badge badge-連線">預購</span>`);
     else if (p.inStock) badges.push(`<span class="card-badge badge-現貨">現貨</span>`);
-    if (p.inLive) badges.push(`<span class="card-badge badge-連線">限時</span>`);
     return `
     <div class="product-card${soldOut?' sold-out':''}" data-name="${escapeHtml(p.name)}" data-cat="${escapeHtml(p.cat)}" onclick="openProductDetail(${productIndex})">
       <div class="card-img">${imgHtml}<div class="card-badges">${badges.join('')}</div></div>
