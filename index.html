@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>初立選物 Truligoods</title>
-<!-- promo-spec-search-reverse-v1 -->
+<!-- promo-spec-search-reverse-spec-stock-v1 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Caveat:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -715,10 +715,38 @@ function escapeHtml(value) {
 }
 
 
-function getSpecOptions(p) {
+function getSpecOptionDetails(p) {
   const raw = String(p?.specOptions || '').trim();
   if (!raw) return [];
-  return raw.split(/[,，\n]/).map(s => s.trim()).filter(Boolean);
+  return raw.split(/[,，\n]/).map(item => {
+    const text = String(item || '').trim();
+    if (!text) return null;
+    const parts = text.split(/[:：]/);
+    if (parts.length >= 2) {
+      const name = parts.shift().trim();
+      const qtyText = parts.join(':').trim();
+      const qty = Number(qtyText);
+      return { name, qty: Number.isFinite(qty) ? Math.max(0, Math.floor(qty)) : null, hasQty: Number.isFinite(qty) };
+    }
+    return { name: text, qty: null, hasQty: false };
+  }).filter(x => x && x.name);
+}
+
+function getSpecOptions(p) {
+  return getSpecOptionDetails(p).map(x => x.name);
+}
+
+function getSpecStockByName(p, specName) {
+  const target = String(specName || '').trim();
+  return getSpecOptionDetails(p).find(x => x.name === target) || null;
+}
+
+function getSpecStockSummary(p) {
+  const specs = getSpecOptionDetails(p);
+  if (!specs.length || !specs.some(x => x.hasQty)) return '';
+  const available = specs.filter(x => !x.hasQty || x.qty > 0);
+  if (!available.length) return '規格皆售完';
+  return available.map(x => x.hasQty ? `${x.name} ${x.qty}` : x.name).join('｜');
 }
 
 function getPromoText(p) {
@@ -847,7 +875,7 @@ function renderProducts(cat) {
         <div class="card-name">${escapeHtml(p.name)}</div>
         ${p.desc ? `<div class="card-desc">${escapeHtml(p.desc)}</div>` : ''}
         ${promoText ? `<div class="card-promo">🔥 ${escapeHtml(promoText)}</div>` : ''}
-        ${hasSpecs ? `<div class="card-spec">可選規格：${specOptions.length} 種</div>` : ''}
+        ${hasSpecs ? `<div class="card-spec">${escapeHtml(getSpecStockSummary(p) || ('可選規格：' + specOptions.length + ' 種'))}</div>` : ''}
         <div class="card-stock ${stockInfo.cls}">${stockInfo.html}</div>
         <div class="detail-hint">點開看詳細介紹</div>
         <div class="card-footer">
@@ -871,9 +899,13 @@ function openProductDetail(index) {
   if (!p) return;
   const soldOut = p.stock === '售完';
   const stockInfo = getStockText(p);
-  const specOptions = getSpecOptions(p);
+  const specDetails = getSpecOptionDetails(p);
+  const specOptions = specDetails.map(x => x.name);
   const promoText = getPromoText(p);
-  const specHtml = specOptions.length ? `<div class="detail-spec"><label>請選擇規格</label><select id="detailSpecSelect"><option value="">請選擇</option>${specOptions.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}</select></div>` : '';
+  const specHtml = specDetails.length ? `<div class="detail-spec"><label>請選擇規格</label><select id="detailSpecSelect"><option value="">請選擇</option>${specDetails.map(opt => {
+    const label = opt.hasQty ? `${opt.name}（${opt.qty > 0 ? '剩 ' + opt.qty + ' 個' : '售完'}）` : opt.name;
+    return `<option value="${escapeHtml(opt.name)}" ${opt.hasQty && opt.qty <= 0 ? 'disabled' : ''}>${escapeHtml(label)}</option>`;
+  }).join('')}</select></div>` : '';
   const imgHtml = p.img
     ? `<div class="detail-img"><img src="${p.img}" alt="${escapeHtml(p.name)}"></div>`
     : `<div class="detail-img" style="min-height:180px;font-size:56px">${catIcon(p.cat)}</div>`;
@@ -913,6 +945,20 @@ function addToCartByIndex(index, e) {
       openProductDetail(index);
       showToast('請先選擇規格');
       return;
+    }
+    const specInfo = getSpecStockByName(p, spec);
+    if (specInfo && specInfo.hasQty) {
+      if (specInfo.qty <= 0) {
+        showToast('這個規格已售完');
+        return;
+      }
+      const currentQty = cart
+        .filter(c => c.name === p.name && c.cat === p.cat && String(c.spec || '') === spec)
+        .reduce((sum, c) => sum + Number(c.qty || 0), 0);
+      if (currentQty >= specInfo.qty) {
+        showToast('這個規格庫存不足');
+        return;
+      }
     }
   }
 
